@@ -1,9 +1,9 @@
 {
-	"name": "vscode-office",
-	"displayName": "Office Viewer",
+	"name": "office-viewer-pro",
+	"displayName": "Office Viewer Pro",
 	"description": "View word,excel files and using WYSIWYG editor for markdown.",
 	"version": "3.5.4",
-	"publisher": "cweijan",
+	"publisher": "nanmu",
 	"icon": "images/logo.png",
 	"engines": {
 		"vscode": "^1.64.0"
@@ -20,13 +20,12 @@
 		"Other"
 	],
 	"bugs": {
-		"url": "https://github.com/cweijan/vscode-office/issues",
-		"email": "cweijan@163.com"
+		"url": "https://github.com/Lucas-CX/vscode-office/issues"
 	},
-	"homepage": "https://github.com/cweijan/vscode-office/blob/master/README.md",
+	"homepage": "https://github.com/Lucas-CX/vscode-office",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/cweijan/vscode-office.git"
+		"url": "https://github.com/Lucas-CX/vscode-office.git"
 	},
 	"activationEvents": [
 		"onStartupFinished"
