@@ -1,5 +1,21 @@
 import { openLink, hotKeys, imageParser, getToolbar, autoSymbol, onToolbarClick, createContextMenu, scrollEditor } from "./util.js";
 
+// Preload mermaid from the local extension path so vditor uses it instead of CDN.
+// vditor's loadScript helper skips loading if document.getElementById("vditorMermaidScript")
+// already exists, so injecting the script before Vditor initialises is sufficient to
+// redirect all mermaid loading (both static-method calls and internal wysiwyg renders).
+function loadLocalMermaid(rootPath) {
+  return new Promise((resolve) => {
+    if (document.getElementById('vditorMermaidScript')) return resolve();
+    const script = document.createElement('script');
+    script.id = 'vditorMermaidScript';
+    script.src = `${rootPath}/dist/js/mermaid/mermaid.min.js`;
+    script.onload = resolve;
+    script.onerror = resolve; // fail silently and let vditor fall back to CDN
+    document.head.appendChild(script);
+  });
+}
+
 let state;
 function loadConfigs() {
   const elem = document.getElementById('configs')
@@ -15,6 +31,7 @@ function loadConfigs() {
 loadConfigs()
 
 handler.on("open", async (md) => {
+  await loadLocalMermaid(md.rootPath);
   const { config, language } = md;
   addAutoTheme(md.rootPath, config.editorTheme)
   handler.on('theme', theme => {
