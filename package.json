@@ -141,7 +141,7 @@
 				"command": "docfile.markdown.paste",
 				"key": "ctrl+v",
 				"mac": "cmd+v",
-				"when": "!terminalFocus && !filesExplorerFocus && resourceLangId == markdown"
+				"when": "editorTextFocus && resourceScheme == file && editorLangId == markdown"
 			},
 			{
 				"command": "docfile.html.preview",

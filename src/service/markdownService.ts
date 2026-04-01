@@ -91,13 +91,20 @@ export class MarkdownService {
 
     public async loadClipboardImage() {
 
-        const document = vscode.window.activeTextEditor?.document || Holder.activeDocument
+        const editor = vscode.window.activeTextEditor;
+        const document = editor?.document;
+
+        if (!document || document.uri.scheme !== 'file' || document.languageId !== 'markdown') {
+            vscode.commands.executeCommand("editor.action.clipboardPasteAction")
+            return
+        }
+
         if (await vscode.env.clipboard.readText()) {
             vscode.commands.executeCommand("editor.action.clipboardPasteAction")
             return
         }
 
-        if (!document || document.isUntitled || document.isClosed) {
+        if (document.isUntitled || document.isClosed) {
             return
         }
 
