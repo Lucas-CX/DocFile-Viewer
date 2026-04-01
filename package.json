@@ -2,7 +2,7 @@
 	"name": "docfile-viewer",
 	"displayName": "DocFile Viewer",
 	"description": "Preview and edit office documents (Word, Excel, PDF), compressed archives, fonts, SVG, and Markdown with a WYSIWYG editor — all inside VS Code.",
-	"version": "4.0.0",
+	"version": "4.1.0",
 	"publisher": "nanmu",
 	"icon": "images/logo.png",
 	"engines": {
