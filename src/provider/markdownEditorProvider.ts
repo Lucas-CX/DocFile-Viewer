@@ -67,7 +67,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
         });
 
         let lastManualSaveTime: number;
-        const config = vscode.workspace.getConfiguration("vscode-office");
+        const config = vscode.workspace.getConfiguration("docfile");
         handler.on("init", () => {
             const scrollTop = this.state.get(`scrollTop_${document.uri.fsPath}`, 0);
             handler.emit("open", {

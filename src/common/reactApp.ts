@@ -21,7 +21,7 @@ export class ReactApp {
             .replace(`{{configs}}`, JSON.stringify({
                 ...option,
                 language: vscode.env.language,
-                config: vscode.workspace.getConfiguration('vscode-office')
+                config: vscode.workspace.getConfiguration('docfile')
             }))
     }
 

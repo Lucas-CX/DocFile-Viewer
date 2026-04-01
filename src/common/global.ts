@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-const prefix='vscode-office';
+const prefix='docfile';
 export class Global {
     /**
      * get configuration from vscode setting.

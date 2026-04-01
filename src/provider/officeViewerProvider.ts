@@ -23,7 +23,7 @@ export class OfficeViewerProvider implements vscode.CustomReadonlyEditorProvider
     }
 
     bindCustomEditors(viewOption: { webviewOptions: vscode.WebviewPanelOptions }) {
-        const viewers = ['cweijan.officeViewer', 'cweijan.imageViewer', 'cweijan.htmlViewer', 'cweijan.classViewer']
+        const viewers = ['docfile.officeViewer', 'docfile.imageViewer', 'docfile.htmlViewer', 'docfile.classViewer']
         return viewers.map(viewer => vscode.window.registerCustomEditorProvider(viewer, this, viewOption))
     }
 

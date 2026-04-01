@@ -19,13 +19,13 @@ export function activate(context: vscode.ExtensionContext) {
 	const viewerInstance = new OfficeViewerProvider(context);
 	const markdownEditorProvider = new MarkdownEditorProvider(context)
 	context.subscriptions.push(
-		vscode.commands.registerCommand('office.quickOpen', () => vscode.commands.executeCommand('workbench.action.quickOpen')),
-		vscode.commands.registerCommand('office.markdown.switch', (uri) => { markdownService.switchEditor(uri) }),
-		vscode.commands.registerCommand('office.markdown.paste', () => { markdownService.loadClipboardImage() }),
-		vscode.commands.registerCommand('office.html.preview', uri => HtmlService.previewHtml(uri, context)),
+		vscode.commands.registerCommand('docfile.quickOpen', () => vscode.commands.executeCommand('workbench.action.quickOpen')),
+		vscode.commands.registerCommand('docfile.markdown.switch', (uri) => { markdownService.switchEditor(uri) }),
+		vscode.commands.registerCommand('docfile.markdown.paste', () => { markdownService.loadClipboardImage() }),
+		vscode.commands.registerCommand('docfile.html.preview', uri => HtmlService.previewHtml(uri, context)),
 		vscode.workspace.registerTextDocumentContentProvider('decompile_java', new JavaDecompilerProvider()),
-		vscode.window.registerCustomEditorProvider("cweijan.markdownViewer", markdownEditorProvider, viewOption),
-		vscode.window.registerCustomEditorProvider("cweijan.markdownViewer.optional", markdownEditorProvider, viewOption),
+		vscode.window.registerCustomEditorProvider("docfile.markdownViewer", markdownEditorProvider, viewOption),
+		vscode.window.registerCustomEditorProvider("docfile.markdownViewer.optional", markdownEditorProvider, viewOption),
 		...viewerInstance.bindCustomEditors(viewOption)
 	);
 }
