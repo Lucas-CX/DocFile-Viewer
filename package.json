@@ -1,8 +1,8 @@
 {
-	"name": "office-viewer-pro",
-	"displayName": "Office Viewer Pro",
-	"description": "View word,excel files and using WYSIWYG editor for markdown.",
-	"version": "3.5.4",
+	"name": "docfile-viewer",
+	"displayName": "DocFile Viewer",
+	"description": "Preview and edit office documents (Word, Excel, PDF), compressed archives, fonts, SVG, and Markdown with a WYSIWYG editor — all inside VS Code.",
+	"version": "4.0.0",
 	"publisher": "nanmu",
 	"icon": "images/logo.png",
 	"engines": {
@@ -20,12 +20,12 @@
 		"Other"
 	],
 	"bugs": {
-		"url": "https://github.com/Lucas-CX/vscode-office/issues"
+		"url": "https://github.com/Lucas-CX/DocFile-Viewer/issues"
 	},
-	"homepage": "https://github.com/Lucas-CX/vscode-office",
+	"homepage": "https://github.com/Lucas-CX/DocFile-Viewer",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/Lucas-CX/vscode-office.git"
+		"url": "https://github.com/Lucas-CX/DocFile-Viewer.git"
 	},
 	"activationEvents": [
 		"onStartupFinished"
@@ -205,7 +205,7 @@
 		"customEditors": [
 			{
 				"viewType": "cweijan.officeViewer",
-				"displayName": "Office Viewer",
+				"displayName": "DocFile Viewer",
 				"selector": [
 					{
 						"filenamePattern": "*.xlsx"
@@ -265,7 +265,7 @@
 			},
 			{
 				"viewType": "cweijan.imageViewer",
-				"displayName": "Image Preview(Office Viewer)",
+				"displayName": "Image Preview(DocFile Viewer)",
 				"priority": "option",
 				"selector": [
 					{

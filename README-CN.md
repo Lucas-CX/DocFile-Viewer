@@ -1,24 +1,39 @@
-# Office Viewer
+# DocFile Viewer
 
-## 介绍
+[English](README.md) | 简体中文 | [繁體中文](README-TW.md)
 
-本扩展支持在VS Code中预览以下常见的办公文件格式：
+一个 VS Code 扩展，用于在编辑器中直接预览和编辑常见的文档格式。本项目是 [Office Viewer](https://github.com/cweijan/vscode-office)（MIT 许可证）的社区 fork 版本，包含额外的 bug 修复和功能改进。
 
-- Excel: .xls, .xlsx, .csv
-- Word: .docx
-- Svg: .svg
-- Pdf: .pdf
-- 字体: .ttf, .otf, .woff, .woff2
-- Markdown: .md
-- HTTP请求: .http
-- Windows注册表: .reg
-- 压缩文件: .zip, .jar, .vsix, .rar
+## 支持的格式
 
-## Markdown
+| 类别 | 扩展名 |
+|---|---|
+| 电子表格 | `.xls` `.xlsx` `.xlsm` `.csv` `.ods` |
+| 文档 | `.docx` `.dotx` |
+| PDF | `.pdf` |
+| 图片 | `.jpg` `.png` `.gif` `.webp` `.bmp` `.ico` `.tif` `.svg` |
+| 字体 | `.ttf` `.otf` `.woff` `.woff2` |
+| Markdown | `.md` `.markdown` |
+| 压缩文件 | `.zip` `.jar` `.vsix` `.rar` `.apk` |
+| 网页 | `.html` `.htm` `.http` |
+| 其他 | `.reg` `.class`（Java 反编译） |
 
-集成[Vditor](https://github.com/Vanessa219/vditor)实现对markdown的所见即所得编辑, **注意这个编辑器不再积极维护**.
+## 与 Office Viewer 的区别
 
-如果你需要使用原生markdown编辑器, 在vscode设置中增加以下配置.
+本 fork 版本包含以下修复和改进：
+
+- 支持编辑和保存 Excel 及 CSV 文件
+- 新增 RAR 压缩文件查看支持
+- 修复 REST Client 兼容性问题
+- 改进 ZIP 查看器的编码支持
+- 支持 Markdown 中 Mermaid 图表的导出
+- 多项稳定性和界面改进
+
+## Markdown 编辑器
+
+本扩展提供基于 [Vditor](https://github.com/Vanessa219/vditor) 的所见即所得 Markdown 编辑器。
+
+如需使用 VS Code 内置编辑器，请在 `settings.json` 中添加：
 
 ```json
 {
@@ -29,36 +44,37 @@
 }
 ```
 
-- 在编辑器打开右键菜单可将markdown导出为pdf, docx或者html, pdf依赖于chromium, 可通过 `vscode-office.chromiumPath`配置chromium浏览器路径.
-  ![1685418034035](image/README-CN/1685418034035.png)
+### 快捷键
 
-快捷键: 基于[Vditor快捷键](shortcut.md)以及更多:
+基于 [Vditor 快捷键](shortcut.md)，另外支持：
 
-- 将列表上移一行: `Ctrl Alt I` / `⌘ ^ I`
-- 将列表下移一行: `Ctrl Alt J` / `⌘ ^ J`
-- 在VS Code中编辑: `Ctrl Alt E` / `⌘ ^ E`
+- 将列表上移一行：`Ctrl Alt I` / `⌘ ^ I`
+- 将列表下移一行：`Ctrl Alt J` / `⌘ ^ J`
+- 在 VS Code 中编辑：`Ctrl Alt E` / `⌘ ^ E`
 
-## 其他功能
+### 提示
 
-- 图标主题: 内置了Material Icon Theme部分icon
-- Excel: 支持对xlsx, csv等excel文件进行预览和保存(注意xlsx保存会丢失格式, csv则不支持gbk中文)
-- HTML: 编辑HTML的过程中按下ctrl+shift+v可实时预览.
-- PDF: 支持直接预览pdf文件
-- HTTP: 用于发送http请求, 由于REST Client本地请求有bug, 修改后进行集成.
+- 通过 Ctrl/Cmd + 鼠标滚轮缩放编辑器
+- 通过 Ctrl/Meta + 点击或双击打开超链接
+- 右键菜单可将 Markdown 导出为 PDF、DOCX 或 HTML（PDF 导出依赖 Chromium，可通过 `vscode-office.chromiumPath` 配置浏览器路径）
 
-## Sponsor
+## HTML 实时预览
 
-[![Database Client](https://database-client.com/text_logo.png)](https://marketplace.visualstudio.com/items?itemName=cweijan.vscode-database-client2)
+编辑 HTML 文件时按 `Ctrl+Shift+V` 可打开实时预览。
 
-适用于Visual Studio Code的数据库客户端, 支持**MySQL/MariaDB, PostgreSQL, SQLite, Redis**以及**ElasticSearch**等数据库的管理, 且可作为一个SSH客户端, 极大地提升您的生产力! [立刻安装](https://marketplace.visualstudio.com/items?itemName=cweijan.vscode-database-client2).
+## 致谢
 
-## Credits
+本项目 fork 自 **Weijan Chen** 的 [Office Viewer](https://github.com/cweijan/vscode-office)，基于 [MIT 许可证](LICENSE) 开源。
 
-- PDF rendering: [mozilla/pdf.js/](https://github.com/mozilla/pdf.js/)
-- Docx rendering: [VolodymyrBaydalka/docxjs](https://github.com/VolodymyrBaydalka/docxjs)
-- XLSX rendering:
-  - [SheetJS/sheetjs](https://github.com/SheetJS/sheetjs): XLSX parsing
-  - [myliang/x-spreadsheet](https://github.com/myliang/x-spreadsheet): XLSX rendering
-- HTTP: [Rest  Client](https://github.com/Huachao/vscode-restclient)
-- Markdown: [Vanessa219/vditor](https://github.com/Vanessa219/vditor)
-- Material Icon theme: [PKief/vscode-material-icon-theme](https://github.com/PKief/vscode-material-icon-theme)
+### 开源库
+
+- PDF：[mozilla/pdf.js](https://github.com/mozilla/pdf.js/)
+- DOCX：[VolodymyrBaydalka/docxjs](https://github.com/VolodymyrBaydalka/docxjs)
+- XLSX：[SheetJS/sheetjs](https://github.com/SheetJS/sheetjs) + [myliang/x-spreadsheet](https://github.com/myliang/x-spreadsheet)
+- HTTP：[Huachao/vscode-restclient](https://github.com/Huachao/vscode-restclient)
+- Markdown：[Vanessa219/vditor](https://github.com/Vanessa219/vditor)
+- 图标：[PKief/vscode-material-icon-theme](https://github.com/PKief/vscode-material-icon-theme)
+
+## 许可证
+
+[MIT](LICENSE) — Copyright (c) 2020 Weijan Chen, 2025 Lucas-CX
