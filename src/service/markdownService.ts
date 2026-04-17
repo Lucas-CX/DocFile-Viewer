@@ -3,13 +3,14 @@ import { Output } from "@/common/Output";
 import { spawn } from 'child_process';
 import chromeFinder from 'chrome-finder';
 import { fileTypeFromFile } from 'file-type';
-import { copyFileSync, existsSync, lstatSync, mkdirSync, renameSync } from 'fs';
+import { copyFileSync, lstatSync, renameSync } from 'fs';
 import { homedir } from 'os';
-import path, { dirname, extname, isAbsolute, join, parse } from 'path';
+import path, { extname, join } from 'path';
 import * as vscode from 'vscode';
 import { Holder } from './markdown/holder';
 import { convertMd } from "./markdown/markdown-pdf";
 import { Global } from "@/common/global";
+import { createMarkdownImageText, ensureImageParentDir, resolveMarkdownImageTarget } from "./markdown/pasteImageUtil";
 
 export type ExportType = 'pdf' | 'html' | 'docx';
 
@@ -90,53 +91,59 @@ export class MarkdownService {
     }
 
     public async loadClipboardImage() {
-
         const editor = vscode.window.activeTextEditor;
-        const document = editor?.document;
-
-        if (!document || document.uri.scheme !== 'file' || document.languageId !== 'markdown') {
+        const document = this.getMarkdownDocument(editor?.document ?? Holder.activeDocument);
+        if (!document) {
+            this.logPaste('command', 'no markdown document available, fallback to default paste');
             vscode.commands.executeCommand("editor.action.clipboardPasteAction")
             return
         }
-
-        if (await vscode.env.clipboard.readText()) {
-            vscode.commands.executeCommand("editor.action.clipboardPasteAction")
-            return
-        }
-
         if (document.isUntitled || document.isClosed) {
+            this.logPaste('command', `skip paste for invalid document ${document.uri.fsPath}`);
             return
         }
+        const markdown = await this.createMarkdownImageFromClipboard(document, 'command');
+        if (!markdown) {
+            this.logPaste('command', 'clipboard does not contain image content, fallback to default paste');
+            vscode.commands.executeCommand("editor.action.clipboardPasteAction")
+            return
+        }
+        if (editor?.document.uri.toString() === document.uri.toString()) {
+            await editor.edit(edit => {
+                const current = editor.selection;
+                if (current.isEmpty) {
+                    edit.insert(current.start, markdown);
+                } else {
+                    edit.replace(current, markdown);
+                }
+            });
+            this.logPaste('command', `inserted markdown image into active editor ${document.uri.fsPath}`);
+            return;
+        }
+        await this.insertMarkdownIntoDocument(document, markdown);
+        this.logPaste('command', `inserted markdown image via workspace edit ${document.uri.fsPath}`);
+    }
 
-        const uri = document.uri;
-        const info = adjustImgPath(uri), { fullPath } = info;
-        let { relPath } = info;
-        const imagePath = isAbsolute(fullPath) ? fullPath : `${dirname(uri.fsPath)}/${relPath}`.replace(/\\/g, "/");
-        this.createImgDir(imagePath);
-        this.saveClipboardImageToFileAndGetPath(imagePath, async (savedImagePath) => {
-            if (!savedImagePath) return;
-            if (savedImagePath === 'no image') {
-                vscode.window.showErrorMessage('There is not an image in the clipboard.');
-                return;
-            }
-            this.copyFromPath(savedImagePath, imagePath);
-            const editor = vscode.window.activeTextEditor;
-            const imgName = parse(relPath).name;
-            relPath = await MarkdownService.imgExtGuide(imagePath, relPath);
-            if (editor) {
-                editor?.edit(edit => {
-                    const current = editor.selection;
-                    if (current.isEmpty) {
-                        edit.insert(current.start, `![${imgName}](${relPath})`);
-                    } else {
-                        edit.replace(current, `![${imgName}](${relPath})`);
-                    }
-                });
-            } else {
-                vscode.env.clipboard.writeText(`![${imgName}](${relPath})`)
-                vscode.commands.executeCommand("editor.action.clipboardPasteAction")
-            }
-        })
+    public async createMarkdownImageFromClipboard(document: vscode.TextDocument, source = 'unknown') {
+        const markdownDocument = this.getMarkdownDocument(document);
+        if (!markdownDocument) {
+            this.logPaste(source, 'skip clipboard image creation because document is not file markdown');
+            return;
+        }
+        const { relPath, fullPath } = adjustImgPath(markdownDocument.uri);
+        const target = resolveMarkdownImageTarget(markdownDocument.uri, relPath, fullPath);
+        ensureImageParentDir(target.imagePath);
+        this.logPaste(source, `resolved image target`, `doc=${markdownDocument.uri.fsPath}; rel=${target.relPath}; abs=${target.imagePath}`);
+        const savedImagePath = await this.readClipboardImageToPath(target.imagePath);
+        if (!savedImagePath || savedImagePath === 'no image') {
+            this.logPaste(source, 'clipboard image read returned no image');
+            return;
+        }
+        this.copyFromPath(savedImagePath, target.imagePath);
+        const adjustedRelPath = await MarkdownService.imgExtGuide(target.imagePath, target.relPath);
+        const markdown = createMarkdownImageText(target.imageName, adjustedRelPath);
+        this.logPaste(source, `created markdown image`, `markdown=${markdown}`);
+        return markdown;
     }
 
     public static async imgExtGuide(absPath: string, relPath: string) {
@@ -163,59 +170,72 @@ export class MarkdownService {
         }
     }
 
-    private createImgDir(imagePath: string) {
-        const dir = path.dirname(imagePath);
-        if (!existsSync(dir)) {
-            mkdirSync(dir, { recursive: true });
-        }
+    private getMarkdownDocument(document?: vscode.TextDocument | null) {
+        if (!document) return;
+        if (document.uri.scheme !== 'file' || document.languageId !== 'markdown') return;
+        return document;
     }
 
-    private saveClipboardImageToFileAndGetPath(imagePath: string, cb: (value: string) => void) {
+    private async insertMarkdownIntoDocument(document: vscode.TextDocument, markdown: string) {
+        const lastLine = document.lineAt(document.lineCount - 1);
+        const prefix = document.getText().length > 0 ? '\n' : '';
+        const edit = new vscode.WorkspaceEdit();
+        edit.insert(document.uri, lastLine.range.end, `${prefix}${markdown}`);
+        await vscode.workspace.applyEdit(edit);
+    }
+
+    private async readClipboardImageToPath(imagePath: string): Promise<string | undefined> {
         if (!imagePath) return;
         const platform = process.platform;
-        if (platform === 'win32') {
-            // Windows
-            const scriptPath = path.join(this.context.extensionPath, '/lib/pc.ps1');
-            const powershell = spawn('powershell', [
-                '-noprofile',
-                '-noninteractive',
-                '-nologo',
-                '-sta',
-                '-executionpolicy', 'unrestricted',
-                '-windowstyle', 'hidden',
-                '-file', scriptPath,
-                imagePath
-            ]);
-            powershell.on('exit', function (code, signal) {
+        return new Promise((resolve, reject) => {
+            let command: string;
+            let args: string[];
+            if (platform === 'win32') {
+                command = 'powershell';
+                args = [
+                    '-noprofile',
+                    '-noninteractive',
+                    '-nologo',
+                    '-sta',
+                    '-executionpolicy', 'unrestricted',
+                    '-windowstyle', 'hidden',
+                    '-file', path.join(this.context.extensionPath, '/lib/pc.ps1'),
+                    imagePath
+                ];
+            } else if (platform === 'darwin') {
+                command = 'osascript';
+                args = [path.join(this.context.extensionPath, './lib/mac.applescript'), imagePath];
+            } else {
+                command = 'sh';
+                args = [path.join(this.context.extensionPath, './lib/linux.sh'), imagePath];
+            }
+            const child = spawn(command, args);
+            let output = '';
+            let settled = false;
+            child.stdout.on('data', data => {
+                output += data.toString();
             });
-            powershell.stdout.on('data', function (data) {
-                cb(data.toString().trim());
+            child.on('error', error => {
+                if (settled) return;
+                settled = true;
+                reject(error);
             });
-        } else if (platform === 'darwin') {
-            // Mac
-            const scriptPath = path.join(this.context.extensionPath, './lib/mac.applescript');
-            const ascript = spawn('osascript', [scriptPath, imagePath]);
-            ascript.on('exit', function (code, signal) {
-            });
-            ascript.stdout.on('data', function (data) {
-                cb(data.toString().trim());
-            });
-        } else {
-            // Linux 
-            const scriptPath = path.join(this.context.extensionPath, './lib/linux.sh');
-
-            const ascript = spawn('sh', [scriptPath, imagePath]);
-            ascript.on('exit', function (code, signal) {
-            });
-            ascript.stdout.on('data', function (data) {
-                const result = data.toString().trim();
-                if (result == "no xclip") {
+            child.on('close', () => {
+                if (settled) return;
+                settled = true;
+                const result = output.trim();
+                if (result === "no xclip") {
                     vscode.window.showInformationMessage('You need to install xclip command first.');
+                    resolve(undefined);
                     return;
                 }
-                cb(result);
+                resolve(result || undefined);
             });
-        }
+        });
+    }
+
+    private logPaste(source: string, message: string, detail?: string) {
+        Output.debug(`[markdown-paste][${source}] ${message}${detail ? ` | ${detail}` : ''}`);
     }
 
     public switchEditor(uri: vscode.Uri) {

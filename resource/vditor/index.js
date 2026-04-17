@@ -94,6 +94,11 @@ handler.on("open", async (md) => {
       emoji: {},
       extend: hotKeys
     }, after() {
+      handler.on("insertText", text => {
+        if (!text) return;
+        document.execCommand('insertText', false, text);
+        handler.emit("save", editor.getValue());
+      })
       handler.on("update", content => {
         editor.setValue(content);
       })

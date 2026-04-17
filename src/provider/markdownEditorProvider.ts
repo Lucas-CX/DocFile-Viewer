@@ -1,6 +1,6 @@
-import { adjustImgPath, getWorkspacePath, writeFile } from '@/common/fileUtil';
-import { readFileSync, writeFileSync } from 'fs';
-import { basename, isAbsolute, parse, resolve } from 'path';
+import { adjustImgPath, getWorkspacePath } from '@/common/fileUtil';
+import { readFileSync } from 'fs';
+import { basename, parse } from 'path';
 import * as vscode from 'vscode';
 import { Handler } from '../common/handler';
 import { Util } from '../common/util';
@@ -8,6 +8,8 @@ import { Holder } from '../service/markdown/holder';
 import { MarkdownService } from '../service/markdownService';
 import { Global } from '@/common/global';
 import { platform } from 'os';
+import { Output } from '@/common/Output';
+import { createMarkdownImageText, resolveMarkdownImageTarget, writeBinaryImageFile } from '../service/markdown/pasteImageUtil';
 
 /**
  * support view and edit office files.
@@ -17,11 +19,13 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
     private extensionPath: string;
     private countStatus: vscode.StatusBarItem;
     private state: vscode.Memento;
+    private markdownService: MarkdownService;
 
     constructor(private context: vscode.ExtensionContext) {
         this.extensionPath = context.extensionPath;
         this.countStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
         this.state = context.globalState
+        this.markdownService = new MarkdownService(context);
     }
 
     private getFolders(): vscode.Uri[] {
@@ -97,14 +101,10 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
             }
         }).on("scroll", ({ scrollTop }) => {
             this.state.update(`scrollTop_${document.uri.fsPath}`, scrollTop)
+        }).on("paste", async () => {
+            await this.pasteIntoMarkdownWebview(document, handler);
         }).on("img", async (img) => {
-            const { relPath, fullPath } = adjustImgPath(uri)
-            const imagePath = isAbsolute(fullPath) ? fullPath : `${resolve(uri.fsPath, "..")}/${relPath}`.replace(/\\/g, "/");
-            writeFileSync(imagePath, Buffer.from(img, 'binary'))
-            const fileName = parse(relPath).name;
-            const adjustRelPath = await MarkdownService.imgExtGuide(imagePath, relPath);
-            vscode.env.clipboard.writeText(`![${fileName}](${adjustRelPath})`)
-            vscode.commands.executeCommand("editor.action.clipboardPasteAction")
+            await this.insertBinaryImageIntoWebview(document, handler, img, 'upload');
         }).on("quickOpen", () => {
             vscode.commands.executeCommand('workbench.action.quickOpen');
         }).on("editInVSCode", (full: boolean) => {
@@ -168,6 +168,41 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
         const edit = new vscode.WorkspaceEdit();
         edit.replace(document.uri, new vscode.Range(0, 0, document.lineCount, 0), content);
         return vscode.workspace.applyEdit(edit);
+    }
+
+    private async pasteIntoMarkdownWebview(document: vscode.TextDocument, handler: Handler) {
+        const markdown = await this.markdownService.createMarkdownImageFromClipboard(document, 'webview');
+        if (markdown) {
+            handler.emit("insertText", markdown);
+            this.logPaste('webview', `inserted clipboard image markdown for ${document.uri.fsPath}`);
+            return;
+        }
+        const text = await vscode.env.clipboard.readText();
+        if (text) {
+            handler.emit("insertText", text);
+            this.logPaste('webview', `inserted clipboard text for ${document.uri.fsPath}`);
+            return;
+        }
+        this.logPaste('webview', `clipboard contained no supported text or image for ${document.uri.fsPath}`);
+    }
+
+    private async insertBinaryImageIntoWebview(
+        document: vscode.TextDocument,
+        handler: Handler,
+        img: string,
+        source: string,
+    ) {
+        const { relPath, fullPath } = adjustImgPath(document.uri);
+        const target = resolveMarkdownImageTarget(document.uri, relPath, fullPath);
+        writeBinaryImageFile(target.imagePath, Buffer.from(img, 'binary'));
+        const adjustRelPath = await MarkdownService.imgExtGuide(target.imagePath, target.relPath);
+        const markdown = createMarkdownImageText(parse(adjustRelPath).name, adjustRelPath);
+        handler.emit("insertText", markdown);
+        this.logPaste(source, `saved binary image for ${document.uri.fsPath} -> ${target.imagePath}`);
+    }
+
+    private logPaste(source: string, message: string) {
+        Output.debug(`[markdown-paste][${source}] ${message}`);
     }
 
 }

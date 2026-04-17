@@ -231,7 +231,7 @@ export const createContextMenu = (editor) => {
                 break;
             case "paste":
                 if (document.getSelection()?.toString()) { document.execCommand("delete") }
-                vscodeEvent.emit('command', 'docfile.markdown.paste')
+                handler.emit("paste")
                 break;
             case "exportPdf":
                 vscodeEvent.emit('export', { type: 'pdf' })
@@ -329,9 +329,13 @@ export const autoSymbol = (handler, editor, config) => {
                         if (text) document.execCommand('insertText', false, text.trim());
                         e.stopPropagation();
                     }
-                    else if (document.getSelection()?.toString()) {
-                        // 修复剪切后选中文本没有被清除
-                        document.execCommand("delete")
+                    else {
+                        if (document.getSelection()?.toString()) {
+                            // 修复剪切后选中文本没有被清除
+                            document.execCommand("delete")
+                        }
+                        handler.emit("paste");
+                        e.stopPropagation();
                     }
                     e.preventDefault();
                     break;
